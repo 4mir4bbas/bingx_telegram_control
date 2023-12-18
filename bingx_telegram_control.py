@@ -275,6 +275,7 @@ while len(bot.get_updates()) == 0:
     time.sleep(5)
 bot.send_message(chat_id, "the bot initialized successfully")
 offset = bot.get_updates()[-1].update_id+1
+print(offset)
 #offset = 141038786
 last_offset = offset
 risk = 0.01
@@ -317,6 +318,7 @@ while True:
     if len(updates) > 0:
         print("updates length is grater than 0")
         offset += 1
+        print(offset)
         #print(offset)
         for msg in updates:
             #print(read_message(msg.channel_post.json['text']))
