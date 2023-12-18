@@ -312,8 +312,10 @@ while True:
 
     updates = []
     if bot.get_updates()[-1].update_id == offset:
+        print("get new updates")
         updates = bot.get_updates(offset)
     if len(updates) > 0:
+        print("updates length is grater than 0")
         offset += 1
         #print(offset)
         for msg in updates:
