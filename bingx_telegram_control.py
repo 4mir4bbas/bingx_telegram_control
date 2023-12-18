@@ -274,7 +274,7 @@ while len(bot.get_updates()) == 0:
     bot.send_message(chat_id, "Please send a random message to initialize the bot")
     time.sleep(5)
 bot.send_message(chat_id, "the bot initialized successfully")
-offset = bot.get_updates()[-1].update_id
+offset = bot.get_updates()[-1].update_id+1
 print(offset)
 #offset = 141038786
 last_offset = offset
