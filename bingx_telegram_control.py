@@ -286,7 +286,7 @@ trigger_orders = set()
 trigger_orders_orderId = set()
 symbols = set()
 while True:
-
+    print("in while loop")
     # make riskfree
     symbol_list = list(symbols)
     i = 0
@@ -396,3 +396,4 @@ while True:
                 #demo(symbol, side, positionside, type1, price, quoteotderqty, leverage, quantity, tp, sl)
                 #send_order(symbol, side, positionside, type1, price, quantity, tp, sl)
     time.sleep(2)
+    print('after sleep')
