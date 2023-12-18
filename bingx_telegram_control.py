@@ -272,10 +272,10 @@ chat_id = int(input("Please enter your chat ID: "))
 orders_dic = {}
 while len(bot.get_updates()) == 0:
     bot.send_message(chat_id, "Please send a random message to initialize the bot")
-    time.sleep(5)
+    time.sleep(20)
 bot.send_message(chat_id, "the bot initialized successfully")
-#offset = bot.get_updates()[-1].update_id+1
-offset = 141038872
+offset = bot.get_updates()[-1].update_id+1
+#offset = 141038872
 last_offset = offset
 risk = 0.01
 tps = {}
