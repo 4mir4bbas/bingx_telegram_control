@@ -274,9 +274,9 @@ while len(bot.get_updates()) == 0:
     bot.send_message(chat_id, "Please send a random message to initialize the bot")
     time.sleep(5)
 bot.send_message(chat_id, "the bot initialized successfully")
-offset = bot.get_updates()[-1].update_id+1
+#offset = bot.get_updates()[-1].update_id+1
 print(offset)
-#offset = 141038786
+offset = 141038872
 last_offset = offset
 risk = 0.01
 tps = {}
@@ -287,7 +287,7 @@ trigger_orders = set()
 trigger_orders_orderId = set()
 symbols = set()
 while True:
-    print("in while loop")
+    #print("in while loop")
     # make riskfree
     symbol_list = list(symbols)
     i = 0
@@ -313,10 +313,10 @@ while True:
 
     updates = []
     if bot.get_updates()[-1].update_id == offset:
-        print("get new updates")
+        #print("get new updates")
         updates = bot.get_updates(offset)
     if len(updates) > 0:
-        print("updates length is grater than 0")
+        #print("updates length is grater than 0")
         offset += 1
         print(offset)
         #print(offset)
@@ -400,4 +400,4 @@ while True:
                 #demo(symbol, side, positionside, type1, price, quoteotderqty, leverage, quantity, tp, sl)
                 #send_order(symbol, side, positionside, type1, price, quantity, tp, sl)
     time.sleep(2)
-    print('after sleep')
+    #print('after sleep')
