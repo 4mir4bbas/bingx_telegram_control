@@ -353,13 +353,13 @@ while True:
                         now_price = get_price(dic['symbol'])
                         now = False
                         if dic['side'] == "BUY":
-                            if now_price < dic['price'] and abs(now_price - dic['price'])/now_price > 0.005:
+                            if now_price < dic['price']:
                                 tp1_price = find_tp1_price(entry=now_price, side=dic['side'], change=1)
                                 now = True
                             else:
                                 tp1_price = find_tp1_price(entry=dic['price'], side=dic['side'], change=1)###################################################
                         elif dic['side'] == "SELL":
-                            if now_price > dic['price'] and abs(now_price - dic['price'])/now_price > 0.005:
+                            if now_price > dic['price']:
                                 tp1_price = find_tp1_price(entry=now_price, side=dic['side'], change=1)
                                 now = True
                             else:
