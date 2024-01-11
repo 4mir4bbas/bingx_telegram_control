@@ -170,6 +170,7 @@ def get_price(symbol):
     price_dic = json.loads(price_str)
     if price_dic['code'] == 0:
         return float(price_dic['data']['price'])
+        #return price_dic
     else:
         return -1
 
@@ -198,7 +199,7 @@ def find_tp1_price(entry, side, change):
         result = entry + entry*change*0.01
     else:
         result = entry - entry*change*0.01
-    return result
+    return round(result, 1)
 
 
 def get_sign(api_secret, payload):
@@ -266,16 +267,20 @@ def read_message(txt):
         return -1
 
 
+
+
+
 bot_token = input("Please enter your Telegram bot token: ")
 bot = telebot.TeleBot(bot_token)
 chat_id = int(input("Please enter your chat ID: "))
 orders_dic = {}
 while len(bot.get_updates()) == 0:
     bot.send_message(chat_id, "Please send a random message to initialize the bot")
-    time.sleep(20)
+    time.sleep(5)
 bot.send_message(chat_id, "the bot initialized successfully")
 offset = bot.get_updates()[-1].update_id+1
-#offset = 141038872
+#print(offset)
+#offset = 141038786
 last_offset = offset
 risk = 0.01
 tps = {}
@@ -286,7 +291,7 @@ trigger_orders = set()
 trigger_orders_orderId = set()
 symbols = set()
 while True:
-    #print("in while loop")
+
     # make riskfree
     symbol_list = list(symbols)
     i = 0
@@ -312,12 +317,9 @@ while True:
 
     updates = []
     if bot.get_updates()[-1].update_id == offset:
-        #print("get new updates")
         updates = bot.get_updates(offset)
     if len(updates) > 0:
-        #print("updates length is grater than 0")
         offset += 1
-        print(offset)
         #print(offset)
         for msg in updates:
             #print(read_message(msg.channel_post.json['text']))
@@ -348,12 +350,29 @@ while True:
                         continue
                     responses = []
                     if dic['type'] == 'LIMIT':
-                        tp1_price = find_tp1_price(entry=dic['price'], side=dic['side'], change=0.01)###################################################
+                        now_price = get_price(dic['symbol'])
+                        now = False
+                        if dic['side'] == "BUY":
+                            if now_price < dic['price'] and abs(now_price - dic['price'])/now_price > 0.005:
+                                tp1_price = find_tp1_price(entry=now_price, side=dic['side'], change=1)
+                                now = True
+                            else:
+                                tp1_price = find_tp1_price(entry=dic['price'], side=dic['side'], change=1)###################################################
+                        elif dic['side'] == "SELL":
+                            if now_price > dic['price'] and abs(now_price - dic['price'])/now_price > 0.005:
+                                tp1_price = find_tp1_price(entry=now_price, side=dic['side'], change=1)
+                                now = True
+                            else:
+                                tp1_price = find_tp1_price(entry=dic['price'], side=dic['side'], change=1)
+                        #print(tp1_price)
                         tp1_quantity = quantity/2
                         tp2_quantity = quantity/4
                         tp3_quantity = quantity/4
                         sl_quantity = quantity
-                        responses.append(send_limit_order(dic['symbol'], dic['side'], dic['positionside'], dic['price'], tp1_quantity, tp1_price, dic['sl']))
+                        if now:
+                            responses.append(send_limit_order(dic['symbol'], dic['side'], dic['positionside'], now_price, tp1_quantity, tp1_price, dic['sl']))
+                        else:
+                            responses.append(send_limit_order(dic['symbol'], dic['side'], dic['positionside'], dic['price'], tp1_quantity, tp1_price, dic['sl']))
                         responses.append(send_limit_order(dic['symbol'], dic['side'], dic['positionside'], dic['price'], tp2_quantity, dic['tp2'], dic['sl']))
                         responses.append(send_limit_order(dic['symbol'], dic['side'], dic['positionside'], dic['price'], tp3_quantity, dic['tp3'], dic['sl']))
                         symbols.add(dic['symbol'])
@@ -399,4 +418,4 @@ while True:
                 #demo(symbol, side, positionside, type1, price, quoteotderqty, leverage, quantity, tp, sl)
                 #send_order(symbol, side, positionside, type1, price, quantity, tp, sl)
     time.sleep(2)
-    #print('after sleep')
+
