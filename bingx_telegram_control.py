@@ -354,6 +354,7 @@ while True:
                         now = False
                         if dic['side'] == "BUY":
                             if now_price < dic['price']:
+<<<<<<< HEAD
                                 tp1_price = find_tp1_price(entry=now_price, side=dic['side'], change=1.5)
                                 now = True
                             else:
@@ -368,6 +369,22 @@ while True:
                         tp1_quantity = quantity * 0.3
                         tp2_quantity = quantity * 0.35
                         tp3_quantity = quantity * 0.35
+=======
+                                tp1_price = find_tp1_price(entry=now_price, side=dic['side'], change=1)
+                                now = True
+                            else:
+                                tp1_price = find_tp1_price(entry=dic['price'], side=dic['side'], change=1)###################################################
+                        elif dic['side'] == "SELL":
+                            if now_price > dic['price']:
+                                tp1_price = find_tp1_price(entry=now_price, side=dic['side'], change=1)
+                                now = True
+                            else:
+                                tp1_price = find_tp1_price(entry=dic['price'], side=dic['side'], change=1)
+                        #print(tp1_price)
+                        tp1_quantity = quantity/2
+                        tp2_quantity = quantity/4
+                        tp3_quantity = quantity/4
+>>>>>>> b7163e38fd5c572c528ea151cb7389f01dcc8213
                         sl_quantity = quantity
                         if now:
                             responses.append(send_limit_order(dic['symbol'], dic['side'], dic['positionside'], now_price, tp1_quantity, tp1_price, dic['sl']))
