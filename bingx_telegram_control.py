@@ -170,6 +170,7 @@ def get_price(symbol):
     price_dic = json.loads(price_str)
     if price_dic['code'] == 0:
         return float(price_dic['data']['price'])
+        #return price_dic
     else:
         return -1
 
@@ -198,7 +199,7 @@ def find_tp1_price(entry, side, change):
         result = entry + entry*change*0.01
     else:
         result = entry - entry*change*0.01
-    return result
+    return round(result, 1)
 
 
 def get_sign(api_secret, payload):
@@ -255,15 +256,18 @@ def read_message(txt):
         elif dic['side'].lower() == "sell":
             dic['positionside'] = "SHORT"
         try:
-            dic['price'] = float(lines[3])
-            dic['sl'] = float(lines[5])
-            dic['tp2'] = float(lines[7])
-            dic['tp3'] = float(lines[9])
+            dic['price'] = float(lines[3].replace(',', '.'))
+            dic['sl'] = float(lines[5].replace(',', '.'))
+            dic['tp2'] = float(lines[7].replace(',', '.'))
+            dic['tp3'] = float(lines[9].replace(',', '.'))
         except:
             return -1
         return dic
     else:
         return -1
+
+
+
 
 
 bot_token = input("Please enter your Telegram bot token: ")
@@ -272,10 +276,11 @@ chat_id = int(input("Please enter your chat ID: "))
 orders_dic = {}
 while len(bot.get_updates()) == 0:
     bot.send_message(chat_id, "Please send a random message to initialize the bot")
-    time.sleep(20)
+    time.sleep(5)
 bot.send_message(chat_id, "the bot initialized successfully")
 offset = bot.get_updates()[-1].update_id+1
-#offset = 141038872
+#print(offset)
+#offset = 141038786
 last_offset = offset
 risk = 0.01
 tps = {}
@@ -286,7 +291,7 @@ trigger_orders = set()
 trigger_orders_orderId = set()
 symbols = set()
 while True:
-    #print("in while loop")
+
     # make riskfree
     symbol_list = list(symbols)
     i = 0
@@ -312,12 +317,9 @@ while True:
 
     updates = []
     if bot.get_updates()[-1].update_id == offset:
-        #print("get new updates")
         updates = bot.get_updates(offset)
     if len(updates) > 0:
-        #print("updates length is grater than 0")
         offset += 1
-        print(offset)
         #print(offset)
         for msg in updates:
             #print(read_message(msg.channel_post.json['text']))
@@ -348,15 +350,40 @@ while True:
                         continue
                     responses = []
                     if dic['type'] == 'LIMIT':
-                        tp1_price = find_tp1_price(entry=dic['price'], side=dic['side'], change=0.01)###################################################
-                        tp1_quantity = quantity/2
-                        tp2_quantity = quantity/4
-                        tp3_quantity = quantity/4
+                        now_price = get_price(dic['symbol'])
+                        now = False
+                        if dic['side'] == "BUY":
+                            if now_price < dic['price']:
+                                tp1_price = find_tp1_price(entry=now_price, side=dic['side'], change=1.5)
+                                now = True
+                            else:
+                                tp1_price = find_tp1_price(entry=dic['price'], side=dic['side'], change=1.5)###################################################
+                        elif dic['side'] == "SELL":
+                            if now_price > dic['pric']:
+                                tp1_price = find_tp1_price(entry=now_price, side=dic['side'], change=1.5)
+                                now = True
+                            else:
+                                tp1_price = find_tp1_price(entry=dic['price'], side=dic['side'], change=1.5)
+                        #print(tp1_price)
+                        tp1_quantity = quantity * 0.3
+                        tp2_quantity = quantity * 0.35
+                        tp3_quantity = quantity * 0.35
                         sl_quantity = quantity
-                        responses.append(send_limit_order(dic['symbol'], dic['side'], dic['positionside'], dic['price'], tp1_quantity, tp1_price, dic['sl']))
+                        if now:
+                            responses.append(send_limit_order(dic['symbol'], dic['side'], dic['positionside'], now_price, tp1_quantity, tp1_price, dic['sl']))
+                        else:
+                            responses.append(send_limit_order(dic['symbol'], dic['side'], dic['positionside'], dic['price'], tp1_quantity, tp1_price, dic['sl']))
                         responses.append(send_limit_order(dic['symbol'], dic['side'], dic['positionside'], dic['price'], tp2_quantity, dic['tp2'], dic['sl']))
                         responses.append(send_limit_order(dic['symbol'], dic['side'], dic['positionside'], dic['price'], tp3_quantity, dic['tp3'], dic['sl']))
-                        symbols.add(dic['symbol'])
+                        time.sleep(10)
+
+                        total_orders = json.loads(get_orders())['data']['orders']
+                        n_tot_orders = 0
+                        for order in total_orders:
+                            if order['symbol'] == dic['symbol']:
+                                n_tot_orders += 1
+                        if n_tot_orders == 6:
+                            symbols.add(dic['symbol'])
 
                     elif dic['type'] == 'MARKET':
                         print('reached here')
@@ -399,4 +426,4 @@ while True:
                 #demo(symbol, side, positionside, type1, price, quoteotderqty, leverage, quantity, tp, sl)
                 #send_order(symbol, side, positionside, type1, price, quantity, tp, sl)
     time.sleep(2)
-    #print('after sleep')
+
