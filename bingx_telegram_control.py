@@ -7,7 +7,7 @@ import json
 import telebot
 
 
-APIURL = "https://open-api-vst.bingx.com";
+APIURL = "https://open-api.bingx.com";
 APIKEY = input("Please enter your API key: ")
 SECRETKEY = input("Please enter your API secret: ")
 
