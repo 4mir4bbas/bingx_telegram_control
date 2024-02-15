@@ -359,7 +359,7 @@ while True:
                             else:
                                 tp1_price = find_tp1_price(entry=dic['price'], side=dic['side'], change=1.5)###################################################
                         elif dic['side'] == "SELL":
-                            if now_price > dic['pric']:
+                            if now_price > dic['price']:
                                 tp1_price = find_tp1_price(entry=now_price, side=dic['side'], change=1.5)
                                 now = True
                             else:
