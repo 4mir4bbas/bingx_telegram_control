@@ -421,7 +421,7 @@ while True:
                             bot.send_message(chat_id, "Order successfully placed. order_id: %s" % res_dic['data']['order']['orderId'])
                             orders_dic[message_hash(msg.channel_post.json['text'])] = res_dic['data']['order']['orderId']
                         else:
-                            bot.send_message(chat_id, res_dic['msg'])
+                            bot.send_message(chat_id, res_dic['code'])
                 #print('info: ', send_order(dic['symbol'], dic['side'], dic['positionside'], dic['type'], dic['price'], dic['leverage'], dic['quantity'], dic['tp1'], dic['sl']))
                 #demo(symbol, side, positionside, type1, price, quoteotderqty, leverage, quantity, tp, sl)
                 #send_order(symbol, side, positionside, type1, price, quantity, tp, sl)
