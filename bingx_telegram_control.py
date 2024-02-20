@@ -5,6 +5,9 @@ import hmac
 from hashlib import sha256
 import json
 import telebot
+import sys
+
+sys.stderr = open('errorlog.txt', 'w')
 
 
 APIURL = "https://open-api.bingx.com";
@@ -316,8 +319,12 @@ while True:
 
 
     updates = []
-    if bot.get_updates()[-1].update_id == offset:
-        updates = bot.get_updates(offset)
+    try:
+        if bot.get_updates()[-1].update_id == offset:
+            updates = bot.get_updates(offset)
+    except Exception as e:
+        print(e, file=sys.stderr)
+    
     if len(updates) > 0:
         offset += 1
         #print(offset)
@@ -334,10 +341,12 @@ while True:
                 #     pass
             else:
                 if 'reply_to_message' in msg.channel_post.json.keys(): #message is a reply to older message
+                    """
                     old_msg_txt = msg.channel_post.json['reply_to_message']['text']
                     old_msg_hash = message_hash(old_msg_txt)
                     old_msg_orderId = orders_dic[old_msg_hash]
                     # close the order here
+                    """
                 else: #message is not a reply to older message
                     balance = get_balance()
                     if balance != -1:
@@ -425,5 +434,5 @@ while True:
                 #print('info: ', send_order(dic['symbol'], dic['side'], dic['positionside'], dic['type'], dic['price'], dic['leverage'], dic['quantity'], dic['tp1'], dic['sl']))
                 #demo(symbol, side, positionside, type1, price, quoteotderqty, leverage, quantity, tp, sl)
                 #send_order(symbol, side, positionside, type1, price, quantity, tp, sl)
-    time.sleep(2)
+    time.sleep(5)
 
