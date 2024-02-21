@@ -293,7 +293,8 @@ n_orders_last = 0
 trigger_orders = set()
 trigger_orders_orderId = set()
 symbols = set()
-while True:
+counter = 0
+while True:   
     try:
         # make riskfree
         symbol_list = list(symbols)
@@ -434,5 +435,9 @@ while True:
                     #send_order(symbol, side, positionside, type1, price, quantity, tp, sl)
         time.sleep(5)
     except Exception as e:
+        counter += 1
+        print(counter, file=sys.stderr)
+        print("============================================================", file=sys.stderr)
         print(e, file=sys.stderr)
+        print("============================================================", file=sys.stderr)
     
