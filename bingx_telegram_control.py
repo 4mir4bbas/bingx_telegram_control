@@ -294,145 +294,145 @@ trigger_orders = set()
 trigger_orders_orderId = set()
 symbols = set()
 while True:
-
-    # make riskfree
-    symbol_list = list(symbols)
-    i = 0
-    while i < len(symbol_list):
-        res = make_riskfree(symbol_list[i])
-        if res != -1:
-            res_dic = json.loads(res)
-            if res_dic['code'] == 0:
-                symbols.remove(symbol_list[i])
-                bot.send_message(chat_id, 'The positions in %s is now risk free' % symbol_list[i])
-        i += 1
-
-    # for sym in symbols:
-    #     res = make_riskfree(sym)
-    #     if res != -1:
-    #         res_dic = json.loads(res)
-    #         if res_dic['code'] == 0:
-    #             symbols.remove(sym)
-    #             bot.send_message(chat_id, 'The positions in %s is now risk free' % sym)
-
-    # check all orders in orders_dic to see if one of them closed by tp or sl
-
-
-    updates = []
     try:
+        # make riskfree
+        symbol_list = list(symbols)
+        i = 0
+        while i < len(symbol_list):
+            res = make_riskfree(symbol_list[i])
+            if res != -1:
+                res_dic = json.loads(res)
+                if res_dic['code'] == 0:
+                    symbols.remove(symbol_list[i])
+                    bot.send_message(chat_id, 'The positions in %s is now risk free' % symbol_list[i])
+            i += 1
+    
+        # for sym in symbols:
+        #     res = make_riskfree(sym)
+        #     if res != -1:
+        #         res_dic = json.loads(res)
+        #         if res_dic['code'] == 0:
+        #             symbols.remove(sym)
+        #             bot.send_message(chat_id, 'The positions in %s is now risk free' % sym)
+    
+        # check all orders in orders_dic to see if one of them closed by tp or sl
+    
+    
+        updates = []
+
         if bot.get_updates()[-1].update_id == offset:
             updates = bot.get_updates(offset)
+        
+        if len(updates) > 0:
+            offset += 1
+            #print(offset)
+            for msg in updates:
+                #print(read_message(msg.channel_post.json['text']))
+                dic = read_message(msg.channel_post.json['text'])
+                if dic == -1:
+                    bot.send_message(chat_id, "The message is not in correct format!")
+                    continue
+                elif len(dic.keys()) == 1:
+                    risk = dic['risk']
+                    bot.send_message(chat_id, "The risk of orders is set to: %s percent" % str(risk*100))
+                    # elif dic.keys()[0] == 'leverage:':
+                    #     pass
+                else:
+                    if 'reply_to_message' in msg.channel_post.json.keys(): #message is a reply to older message
+                        """
+                        old_msg_txt = msg.channel_post.json['reply_to_message']['text']
+                        old_msg_hash = message_hash(old_msg_txt)
+                        old_msg_orderId = orders_dic[old_msg_hash]
+                        # close the order here
+                        """
+                    else: #message is not a reply to older message
+                        balance = get_balance()
+                        if balance != -1:
+                            quoteorderqty = risk*balance
+                            price = get_price(dic['symbol'])
+                            quantity = quoteorderqty / price
+                            #print(quantity)
+                        else:
+                            bot.send_message('Cannot fetch account balance from the server!')
+                            continue
+                        responses = []
+                        if dic['type'] == 'LIMIT':
+                            now_price = get_price(dic['symbol'])
+                            now = False
+                            if dic['side'] == "BUY":
+                                if now_price < dic['price']:
+                                    tp1_price = find_tp1_price(entry=now_price, side=dic['side'], change=1.5)
+                                    now = True
+                                else:
+                                    tp1_price = find_tp1_price(entry=dic['price'], side=dic['side'], change=1.5)###################################################
+                            elif dic['side'] == "SELL":
+                                if now_price > dic['price']:
+                                    tp1_price = find_tp1_price(entry=now_price, side=dic['side'], change=1.5)
+                                    now = True
+                                else:
+                                    tp1_price = find_tp1_price(entry=dic['price'], side=dic['side'], change=1.5)
+                            #print(tp1_price)
+                            tp1_quantity = quantity * 0.3
+                            tp2_quantity = quantity * 0.35
+                            tp3_quantity = quantity * 0.35
+                            sl_quantity = quantity
+                            if now:
+                                responses.append(send_limit_order(dic['symbol'], dic['side'], dic['positionside'], now_price, tp1_quantity, tp1_price, dic['sl']))
+                            else:
+                                responses.append(send_limit_order(dic['symbol'], dic['side'], dic['positionside'], dic['price'], tp1_quantity, tp1_price, dic['sl']))
+                            responses.append(send_limit_order(dic['symbol'], dic['side'], dic['positionside'], dic['price'], tp2_quantity, dic['tp2'], dic['sl']))
+                            responses.append(send_limit_order(dic['symbol'], dic['side'], dic['positionside'], dic['price'], tp3_quantity, dic['tp3'], dic['sl']))
+                            time.sleep(10)
+    
+                            total_orders = json.loads(get_orders())['data']['orders']
+                            n_tot_orders = 0
+                            for order in total_orders:
+                                if order['symbol'] == dic['symbol']:
+                                    n_tot_orders += 1
+                            if n_tot_orders == 6:
+                                symbols.add(dic['symbol'])
+    
+                        elif dic['type'] == 'MARKET':
+                            print('reached here')
+                            n_tps = find_n_tps(msg.channel_post.json['text'])
+    
+                            if n_tps == 1:
+                                responses.append(send_market_order(dic['symbol'], dic['side'], dic['positionside'], dic['price'], quantity, dic['tp1'], dic['sl']))
+                            elif n_tps == 2:
+                                quantity /= 2
+                                responses.append(send_market_order(dic['symbol'], dic['side'], dic['positionside'], dic['price'], quantity, dic['tp1'], dic['sl']))
+                                responses.append(send_market_order(dic['symbol'], dic['side'], dic['positionside'], dic['price'], quantity, dic['tp2'], dic['sl']))
+                            elif n_tps == 3:
+                                quantity /= 3
+                                print('here')
+                                responses.append(send_market_order(dic['symbol'], dic['side'], dic['positionside'], dic['price'], quantity, dic['tp1'], dic['sl']))
+                                responses.append(send_market_order(dic['symbol'], dic['side'], dic['positionside'], dic['price'], quantity, dic['tp2'], dic['sl']))
+                                responses.append(send_market_order(dic['symbol'], dic['side'], dic['positionside'], dic['price'], quantity, dic['tp3'], dic['sl']))
+                        elif dic['type'] == 'TRIGGER_MARKET':
+                            responses.append(send_trigger_market_order(dic['symbol'], dic['side'], dic['positionside'], dic['price'], quantity))
+                            #trigger_orders_orderId.add(json.loads(get_orders())['data']['orders'][-1]['orderId'])
+                            #trigger_orders.add(json.loads(get_orders())['data']['orders'][-1])
+                            sls[dic['symbol']] = [(quantity, dic['sl'])]
+                            if n_tps == 1:
+                                tps[dic['symbol']] = [(quantity, dic['tp1'])]
+                            elif n_tps == 2:
+                                tps[dic['symbol']] = [(quantity/2, dic['tp1']), (quantity/2, dic['tp2'])]
+                            elif n_tps == 3:
+                                tps[dic['symbol']] = [(quantity/3, dic['tp1']), (quantity/3, dic['tp2']), (quantity/3, dic['tp3'])]
+    
+    
+    
+                        for res in responses:
+                            res_dic = json.loads(res)
+                            if res_dic['code'] == 0: #order placed successfully
+                                bot.send_message(chat_id, "Order successfully placed. order_id: %s" % res_dic['data']['order']['orderId'])
+                                orders_dic[message_hash(msg.channel_post.json['text'])] = res_dic['data']['order']['orderId']
+                            else:
+                                bot.send_message(chat_id, res_dic['code'])
+                    #print('info: ', send_order(dic['symbol'], dic['side'], dic['positionside'], dic['type'], dic['price'], dic['leverage'], dic['quantity'], dic['tp1'], dic['sl']))
+                    #demo(symbol, side, positionside, type1, price, quoteotderqty, leverage, quantity, tp, sl)
+                    #send_order(symbol, side, positionside, type1, price, quantity, tp, sl)
+        time.sleep(5)
     except Exception as e:
         print(e, file=sys.stderr)
     
-    if len(updates) > 0:
-        offset += 1
-        #print(offset)
-        for msg in updates:
-            #print(read_message(msg.channel_post.json['text']))
-            dic = read_message(msg.channel_post.json['text'])
-            if dic == -1:
-                bot.send_message(chat_id, "The message is not in correct format!")
-                continue
-            elif len(dic.keys()) == 1:
-                risk = dic['risk']
-                bot.send_message(chat_id, "The risk of orders is set to: %s percent" % str(risk*100))
-                # elif dic.keys()[0] == 'leverage:':
-                #     pass
-            else:
-                if 'reply_to_message' in msg.channel_post.json.keys(): #message is a reply to older message
-                    """
-                    old_msg_txt = msg.channel_post.json['reply_to_message']['text']
-                    old_msg_hash = message_hash(old_msg_txt)
-                    old_msg_orderId = orders_dic[old_msg_hash]
-                    # close the order here
-                    """
-                else: #message is not a reply to older message
-                    balance = get_balance()
-                    if balance != -1:
-                        quoteorderqty = risk*balance
-                        price = get_price(dic['symbol'])
-                        quantity = quoteorderqty / price
-                        #print(quantity)
-                    else:
-                        bot.send_message('Cannot fetch account balance from the server!')
-                        continue
-                    responses = []
-                    if dic['type'] == 'LIMIT':
-                        now_price = get_price(dic['symbol'])
-                        now = False
-                        if dic['side'] == "BUY":
-                            if now_price < dic['price']:
-                                tp1_price = find_tp1_price(entry=now_price, side=dic['side'], change=1.5)
-                                now = True
-                            else:
-                                tp1_price = find_tp1_price(entry=dic['price'], side=dic['side'], change=1.5)###################################################
-                        elif dic['side'] == "SELL":
-                            if now_price > dic['price']:
-                                tp1_price = find_tp1_price(entry=now_price, side=dic['side'], change=1.5)
-                                now = True
-                            else:
-                                tp1_price = find_tp1_price(entry=dic['price'], side=dic['side'], change=1.5)
-                        #print(tp1_price)
-                        tp1_quantity = quantity * 0.3
-                        tp2_quantity = quantity * 0.35
-                        tp3_quantity = quantity * 0.35
-                        sl_quantity = quantity
-                        if now:
-                            responses.append(send_limit_order(dic['symbol'], dic['side'], dic['positionside'], now_price, tp1_quantity, tp1_price, dic['sl']))
-                        else:
-                            responses.append(send_limit_order(dic['symbol'], dic['side'], dic['positionside'], dic['price'], tp1_quantity, tp1_price, dic['sl']))
-                        responses.append(send_limit_order(dic['symbol'], dic['side'], dic['positionside'], dic['price'], tp2_quantity, dic['tp2'], dic['sl']))
-                        responses.append(send_limit_order(dic['symbol'], dic['side'], dic['positionside'], dic['price'], tp3_quantity, dic['tp3'], dic['sl']))
-                        time.sleep(10)
-
-                        total_orders = json.loads(get_orders())['data']['orders']
-                        n_tot_orders = 0
-                        for order in total_orders:
-                            if order['symbol'] == dic['symbol']:
-                                n_tot_orders += 1
-                        if n_tot_orders == 6:
-                            symbols.add(dic['symbol'])
-
-                    elif dic['type'] == 'MARKET':
-                        print('reached here')
-                        n_tps = find_n_tps(msg.channel_post.json['text'])
-
-                        if n_tps == 1:
-                            responses.append(send_market_order(dic['symbol'], dic['side'], dic['positionside'], dic['price'], quantity, dic['tp1'], dic['sl']))
-                        elif n_tps == 2:
-                            quantity /= 2
-                            responses.append(send_market_order(dic['symbol'], dic['side'], dic['positionside'], dic['price'], quantity, dic['tp1'], dic['sl']))
-                            responses.append(send_market_order(dic['symbol'], dic['side'], dic['positionside'], dic['price'], quantity, dic['tp2'], dic['sl']))
-                        elif n_tps == 3:
-                            quantity /= 3
-                            print('here')
-                            responses.append(send_market_order(dic['symbol'], dic['side'], dic['positionside'], dic['price'], quantity, dic['tp1'], dic['sl']))
-                            responses.append(send_market_order(dic['symbol'], dic['side'], dic['positionside'], dic['price'], quantity, dic['tp2'], dic['sl']))
-                            responses.append(send_market_order(dic['symbol'], dic['side'], dic['positionside'], dic['price'], quantity, dic['tp3'], dic['sl']))
-                    elif dic['type'] == 'TRIGGER_MARKET':
-                        responses.append(send_trigger_market_order(dic['symbol'], dic['side'], dic['positionside'], dic['price'], quantity))
-                        #trigger_orders_orderId.add(json.loads(get_orders())['data']['orders'][-1]['orderId'])
-                        #trigger_orders.add(json.loads(get_orders())['data']['orders'][-1])
-                        sls[dic['symbol']] = [(quantity, dic['sl'])]
-                        if n_tps == 1:
-                            tps[dic['symbol']] = [(quantity, dic['tp1'])]
-                        elif n_tps == 2:
-                            tps[dic['symbol']] = [(quantity/2, dic['tp1']), (quantity/2, dic['tp2'])]
-                        elif n_tps == 3:
-                            tps[dic['symbol']] = [(quantity/3, dic['tp1']), (quantity/3, dic['tp2']), (quantity/3, dic['tp3'])]
-
-
-
-                    for res in responses:
-                        res_dic = json.loads(res)
-                        if res_dic['code'] == 0: #order placed successfully
-                            bot.send_message(chat_id, "Order successfully placed. order_id: %s" % res_dic['data']['order']['orderId'])
-                            orders_dic[message_hash(msg.channel_post.json['text'])] = res_dic['data']['order']['orderId']
-                        else:
-                            bot.send_message(chat_id, res_dic['code'])
-                #print('info: ', send_order(dic['symbol'], dic['side'], dic['positionside'], dic['type'], dic['price'], dic['leverage'], dic['quantity'], dic['tp1'], dic['sl']))
-                #demo(symbol, side, positionside, type1, price, quoteotderqty, leverage, quantity, tp, sl)
-                #send_order(symbol, side, positionside, type1, price, quantity, tp, sl)
-    time.sleep(5)
-
